@@ -95,7 +95,6 @@
       overflow-y: auto;
     }
 
-    /* Top Navigation Bar */
     header {
       display: flex;
       justify-content: space-between;
@@ -149,7 +148,6 @@
       background-color: var(--accent-hover);
     }
 
-    /* Tab Sections Content Control */
     .tab-content {
       display: none;
     }
@@ -175,6 +173,13 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-terracotta);
     }
 
     .kpi-title {
@@ -193,7 +198,6 @@
       opacity: 0.8;
     }
 
-    /* Content Grid */
     .dashboard-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -221,7 +225,6 @@
       font-weight: 600;
     }
 
-    /* Map Box */
     #map, #full-map {
       height: 320px;
       border-radius: 8px;
@@ -233,7 +236,6 @@
       height: 500px;
     }
 
-    /* Inventory Alert List & Tables */
     .alert-list {
       display: flex;
       flex-direction: column;
@@ -285,20 +287,22 @@
     .badge-delayed { background: #f8d7da; color: #721c24; }
     .badge-stock { background: #d4edda; color: #155724; }
 
-    .delete-btn {
-      color: var(--status-danger);
+    .icon-btn {
       cursor: pointer;
       border: none;
       background: none;
       font-size: 0.9rem;
+      margin-right: 0.5rem;
     }
+    .edit-btn { color: var(--accent-terracotta); }
+    .delete-btn { color: var(--status-danger); }
 
     .map-pin {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       border: 2px solid white;
-      box-shadow: 0 0 4px rgba(0,0,0,0.4);
+      box-shadow: 0 0 6px rgba(0,0,0,0.4);
     }
 
     /* Modal Overlay */
@@ -316,8 +320,10 @@
       background: white;
       border-radius: 12px;
       padding: 1.5rem;
-      width: 420px;
+      width: 440px;
       max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .form-group {
@@ -337,6 +343,13 @@
       border-radius: 6px;
       border: 1px solid var(--border-color);
     }
+
+    .brand-logo img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      border-radius: 4px; /* Optional: rounds the logo edges slightly */
+    }
   </style>
 </head>
 <body>
@@ -344,7 +357,8 @@
   <!-- Left Navigation Sidebar -->
   <aside>
     <div class="brand-logo">
-      <i class="fa-solid fa-shapes"></i> ARCHHUB
+      <img src="logo.png" alt="ARCHHUB Logo" id="brandLogoImg">
+      ARCHHUB
     </div>
     <ul class="nav-links">
       <li class="nav-item active" onclick="switchTab(0, this)"><i class="fa-solid fa-house"></i> Dashboard</li>
@@ -365,7 +379,7 @@
       </div>
       <div class="user-profile">
         <button class="action-btn" onclick="openModal()"><i class="fa-solid fa-plus"></i> Log Shipment</button>
-        <i class="fa-regular fa-bell" style="font-size: 1.2rem; cursor: pointer;" onclick="alert('System Alerts: No critical failures detected.')"></i>
+        <i class="fa-regular fa-bell" style="font-size: 1.2rem; cursor: pointer;"></i>
         <i class="fa-regular fa-user" style="font-size: 1.2rem; cursor: pointer;"></i>
       </div>
     </header>
@@ -376,19 +390,19 @@
       <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Real-time inventory status, site locations, and compliance alerts across projects.</p>
 
       <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="filterAndSwitchTab(1, '')">
           <div><div class="kpi-title">Total Materials</div><div class="kpi-value" id="kpi-total">0</div></div>
           <i class="fa-solid fa-boxes-stacked kpi-icon" style="color: var(--accent-terracotta);"></i>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="filterAndSwitchTab(1, 'Low Stock')">
           <div><div class="kpi-title">Low Stock Items</div><div class="kpi-value" id="kpi-low" style="color: var(--status-warning);">0</div></div>
           <i class="fa-solid fa-triangle-exclamation kpi-icon" style="color: var(--status-warning);"></i>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="filterAndSwitchTab(2, 'In Transit')">
           <div><div class="kpi-title">Pending Deliveries</div><div class="kpi-value" id="kpi-pending">0</div></div>
           <i class="fa-solid fa-truck kpi-icon" style="color: var(--text-dark);"></i>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="filterAndSwitchTab(2, 'Delayed')">
           <div><div class="kpi-title">Issues / Alarms</div><div class="kpi-value" id="kpi-issues" style="color: var(--status-danger);">0</div></div>
           <i class="fa-solid fa-circle-exclamation kpi-icon" style="color: var(--status-danger);"></i>
         </div>
@@ -407,9 +421,7 @@
           <div class="panel-header">
             <h3>Inventory Alerts</h3>
           </div>
-          <div class="alert-list" id="alert-list">
-            <!-- Populated dynamically -->
-          </div>
+          <div class="alert-list" id="alert-list"></div>
         </div>
       </div>
     </div>
@@ -423,9 +435,7 @@
           <thead>
             <tr><th>Material Name</th><th>Category</th><th>Quantity</th><th>Site Location</th><th>Status</th><th>Actions</th></tr>
           </thead>
-          <tbody id="inventoryTableBody">
-            <!-- Dynamic rows -->
-          </tbody>
+          <tbody id="inventoryTableBody"></tbody>
         </table>
       </div>
     </div>
@@ -439,9 +449,7 @@
           <thead>
             <tr><th>Shipment ID</th><th>Material</th><th>Destination</th><th>ETA / Status</th><th>Carrier Status</th></tr>
           </thead>
-          <tbody id="deliveryTableBody">
-            <!-- Dynamic rows -->
-          </tbody>
+          <tbody id="deliveryTableBody"></tbody>
         </table>
       </div>
     </div>
@@ -449,7 +457,7 @@
     <!-- TAB 4: MAP VIEW -->
     <div id="tab-map" class="tab-content">
       <h2>Live Site Map & Geographic Tracking</h2>
-      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Geofenced monitoring points across regional job sites.</p>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Click any site pin to inspect recent materials.</p>
       <div class="panel">
         <div id="full-map"></div>
       </div>
@@ -462,7 +470,7 @@
       <div class="panel" style="padding: 2rem; text-align: center;">
         <i class="fa-solid fa-file-shield" style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-terracotta);"></i>
         <h3>Specification & Control Report</h3>
-        <p style="margin-top: 0.5rem; color: var(--text-muted);" id="reportSummary">All tracked materials match approved engineering specifications.</p>
+        <p style="margin-top: 0.5rem; color: var(--text-muted);">All tracked materials match approved engineering specifications.</p>
         <button class="action-btn" style="margin: 1.5rem auto 0 auto;" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export Report (CSV)</button>
       </div>
     </div>
@@ -470,15 +478,11 @@
     <!-- TAB 6: SETTINGS -->
     <div id="tab-settings" class="tab-content">
       <h2>System Settings</h2>
-      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Configure thresholds and database connection settings.</p>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Configure application parameters and popup limits.</p>
       <div class="panel">
         <div class="form-group">
-          <label>Active API Endpoint (Render / Express Backend)</label>
-          <input type="text" id="apiEndpointInput" value="http://localhost:3000/api/materials">
-        </div>
-        <div class="form-group">
-          <label>Low Stock Warning Threshold (Units)</label>
-          <input type="number" id="lowStockThreshold" value="20" onchange="renderUI()">
+          <label>Recent Items Limit per Site Popup ($N$)</label>
+          <input type="number" id="sitePopupLimit" value="10" min="1" max="50" onchange="saveSettings()">
         </div>
         <button class="action-btn" onclick="clearData()"><i class="fa-solid fa-rotate"></i> Reset to Sample Data</button>
       </div>
@@ -505,12 +509,29 @@
         </div>
         <div class="form-group">
           <label>Target Site</label>
-          <select id="matSite">
-            <option value="Main Site">Main Site</option>
-            <option value="Site B">Site B</option>
-            <option value="Site C">Site C</option>
+          <select id="matSite" onchange="handleSiteSelection(this.value)">
+            <!-- Populated dynamically -->
           </select>
         </div>
+
+        <!-- Hidden container for adding new custom site (Drop-a-pin coordinates) -->
+        <div id="newSiteFields" style="display: none; background: var(--bg-canvas); padding: 10px; border-radius: 8px; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label>New Site Name</label>
+            <input type="text" id="newSiteName" placeholder="e.g. Site D - Warehouse">
+          </div>
+          <div class="form-group" style="display: flex; gap: 0.5rem;">
+            <div style="flex:1;">
+              <label>Latitude</label>
+              <input type="number" step="any" id="newLat" value="8.9500" placeholder="8.9500">
+            </div>
+            <div style="flex:1;">
+              <label>Longitude</label>
+              <input type="number" step="any" id="newLng" value="125.6000" placeholder="125.6000">
+            </div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label>Status</label>
           <select id="matStatus">
@@ -528,23 +549,60 @@
     </div>
   </div>
 
+  <!-- Edit Inventory Item Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-content">
+      <h3>Edit Inventory Item</h3>
+      <form id="editForm">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label>Material Name</label>
+          <input type="text" id="editName" required>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="editQty" required>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="editStatus">
+            <option value="In Stock">In Stock</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="In Transit">In Transit</option>
+            <option value="Delayed">Delayed</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button type="button" class="action-btn" style="background:#718096;" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="action-btn">Update Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Leaflet JavaScript API -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-
-    const API_URL = 'https://archhub.onrender.com/api/materials';
-
-    // Initial Default State Data
-    const defaultMaterials = [
-      { id: 1, name: "Cement (50 bag)", category: "Aggregates", quantity: 12, site: "Main Site", status: "Low Stock", lat: 8.9600, lng: 125.6000 },
-      { id: 2, name: "Steel Bars (12 mm)", category: "Metals", quantity: 450, site: "Site B", status: "In Transit", lat: 8.9450, lng: 125.5850 },
-      { id: 3, name: "Bricks (1,000 pcs)", category: "Masonry", quantity: 200, site: "Site C", status: "Delayed", lat: 8.9350, lng: 125.6150 },
-      { id: 4, name: "Ceramic Tiles", category: "Finishes", quantity: 600, site: "Main Site", status: "In Stock", lat: 8.9600, lng: 125.6000 }
+    // Initial Sites Setup
+    let defaultSites = [
+      { name: "Main Site", lat: 8.9600, lng: 125.6000 },
+      { name: "Site B", lat: 8.9450, lng: 125.5850 },
+      { name: "Site C", lat: 8.9350, lng: 125.6150 }
     ];
 
-    // Load State from LocalStorage or Default
+    let defaultMaterials = [
+      { id: 1, name: "Cement (50 bag)", category: "Aggregates", quantity: 12, site: "Main Site", status: "Low Stock" },
+      { id: 2, name: "Steel Bars (12 mm)", category: "Metals", quantity: 450, site: "Site B", status: "In Transit" },
+      { id: 3, name: "Bricks (1,000 pcs)", category: "Masonry", quantity: 200, site: "Site C", status: "Delayed" },
+      { id: 4, name: "Ceramic Tiles", category: "Finishes", quantity: 600, site: "Main Site", status: "In Stock" }
+    ];
+
+    // Load State from LocalStorage
+    let sites = JSON.parse(localStorage.getItem('archhub_sites')) || defaultSites;
     let materials = JSON.parse(localStorage.getItem('archhub_materials')) || defaultMaterials;
+    let popupLimit = parseInt(localStorage.getItem('archhub_popup_limit')) || 10;
+    document.getElementById('sitePopupLimit').value = popupLimit;
 
     // --- Tab Switch Logic ---
     function switchTab(index, element) {
@@ -552,10 +610,17 @@
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
       document.querySelectorAll('.tab-content')[index].classList.add('active');
-      element.classList.add('active');
+      if(element) element.classList.add('active');
 
       if(index === 0) { setTimeout(() => map.invalidateSize(), 200); }
       if(index === 3) { setTimeout(() => fullMap.invalidateSize(), 200); }
+    }
+
+    function filterAndSwitchTab(tabIndex, filterText) {
+      const navItem = document.querySelectorAll('.nav-item')[tabIndex];
+      switchTab(tabIndex, navItem);
+      document.getElementById('searchInput').value = filterText;
+      renderUI(filterText);
     }
 
     // --- Map Initialization ---
@@ -571,20 +636,37 @@
       mapMarkers.forEach(m => { map.removeLayer(m); fullMap.removeLayer(m); });
       mapMarkers = [];
 
-      materials.forEach(item => {
+      sites.forEach(site => {
+        // Filter materials for this site, sort by ID descending (newest first), and slice to limit N
+        const siteMaterials = materials
+          .filter(m => m.site === site.name)
+          .sort((a, b) => b.id - a.id)
+          .slice(0, popupLimit);
+
         let pinColor = "#28a745";
-        if (item.status === "Low Stock") pinColor = "#fd7e14";
-        if (item.status === "Delayed") pinColor = "#dc3545";
-        if (item.status === "In Transit") pinColor = "#17a2b8";
+        if (siteMaterials.some(m => m.status === 'Low Stock')) pinColor = "#fd7e14";
+        if (siteMaterials.some(m => m.status === 'Delayed')) pinColor = "#dc3545";
+
+        let popupHtml = `<div style="min-width: 180px;"><b>📍 ${site.name}</b><hr style="margin: 4px 0;">`;
+        if (siteMaterials.length === 0) {
+          popupHtml += `<i style="color:#718096; font-size:0.8rem;">No materials logged here.</i>`;
+        } else {
+          popupHtml += `<div style="max-height: 150px; overflow-y: auto;"><ul style="padding-left: 15px; font-size: 0.85rem;">`;
+          siteMaterials.forEach(item => {
+            popupHtml += `<li><b>${item.name}</b> (${item.quantity} qty) - <span style="color:var(--accent-terracotta)">${item.status}</span></li>`;
+          });
+          popupHtml += `</ul></div>`;
+        }
+        popupHtml += `</div>`;
 
         const pinIcon = L.divIcon({
           className: 'custom-pin-container',
           html: `<div class="map-pin" style="background-color: ${pinColor}"></div>`,
-          iconSize: [14, 14]
+          iconSize: [16, 16]
         });
 
-        const m1 = L.marker([item.lat || 8.9559, item.lng || 125.5994], { icon: pinIcon }).addTo(map).bindPopup(`<b>${item.name}</b><br>Location: ${item.site}<br>Status: ${item.status}`);
-        const m2 = L.marker([item.lat || 8.9559, item.lng || 125.5994], { icon: pinIcon }).addTo(fullMap).bindPopup(`<b>${item.name}</b><br>Location: ${item.site}<br>Status: ${item.status}`);
+        const m1 = L.marker([site.lat, site.lng], { icon: pinIcon }).addTo(map).bindPopup(popupHtml);
+        const m2 = L.marker([site.lat, site.lng], { icon: pinIcon }).addTo(fullMap).bindPopup(popupHtml);
         mapMarkers.push(m1, m2);
       });
     }
@@ -622,7 +704,7 @@
         `;
       });
 
-      // Inventory Catalog Table
+      // Inventory Catalog Table with Edit & Delete Actions
       const invBody = document.getElementById('inventoryTableBody');
       invBody.innerHTML = '';
       filtered.forEach(item => {
@@ -638,7 +720,10 @@
             <td>${item.quantity}</td>
             <td>${item.site}</td>
             <td><span class="badge ${badgeClass}">${item.status}</span></td>
-            <td><button class="delete-btn" onclick="deleteMaterial(${item.id})"><i class="fa-solid fa-trash"></i></button></td>
+            <td>
+              <button class="icon-btn edit-btn" onclick="openEditModal(${item.id})" title="Edit Item"><i class="fa-solid fa-pen"></i></button>
+              <button class="icon-btn delete-btn" onclick="deleteMaterial(${item.id})" title="Delete Item"><i class="fa-solid fa-trash"></i></button>
+            </td>
           </tr>
         `;
       });
@@ -659,11 +744,31 @@
         `;
       });
 
+      updateSiteDropdown();
       updateMapPins();
+
       localStorage.setItem('archhub_materials', JSON.stringify(materials));
+      localStorage.setItem('archhub_sites', JSON.stringify(sites));
     }
 
-    // --- Search Handler ---
+    function updateSiteDropdown() {
+      const select = document.getElementById('matSite');
+      select.innerHTML = '';
+      sites.forEach(s => {
+        select.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+      });
+      select.innerHTML += `<option value="NEW">+ Add New Site...</option>`;
+    }
+
+    function handleSiteSelection(val) {
+      const newFields = document.getElementById('newSiteFields');
+      if (val === 'NEW') {
+        newFields.style.display = 'block';
+      } else {
+        newFields.style.display = 'none';
+      }
+    }
+
     function handleSearch() {
       const q = document.getElementById('searchInput').value;
       renderUI(q);
@@ -673,30 +778,70 @@
     document.getElementById('materialForm').addEventListener('submit', (e) => {
       e.preventDefault();
 
-      const siteCoordinates = {
-        "Main Site": { lat: 8.9600, lng: 125.6000 },
-        "Site B": { lat: 8.9450, lng: 125.5850 },
-        "Site C": { lat: 8.9350, lng: 125.6150 }
-      };
+      let targetSite = document.getElementById('matSite').value;
 
-      const selectedSite = document.getElementById('matSite').value;
-      const coords = siteCoordinates[selectedSite];
+      if (targetSite === 'NEW') {
+        const newSiteName = document.getElementById('newSiteName').value.trim();
+        const lat = parseFloat(document.getElementById('newLat').value);
+        const lng = parseFloat(document.getElementById('newLng').value);
+
+        if (!newSiteName) {
+          alert('Please enter a valid site name.');
+          return;
+        }
+
+        // Add site if not already present
+        if (!sites.some(s => s.name.toLowerCase() === newSiteName.toLowerCase())) {
+          sites.push({ name: newSiteName, lat: lat || 8.9500, lng: lng || 125.6000 });
+        }
+        targetSite = newSiteName;
+      }
 
       const newItem = {
         id: Date.now(),
         name: document.getElementById('matName').value,
         category: document.getElementById('matCat').value,
         quantity: parseInt(document.getElementById('matQty').value),
-        site: selectedSite,
-        status: document.getElementById('matStatus').value,
-        lat: coords.lat,
-        lng: coords.lng
+        site: targetSite,
+        status: document.getElementById('matStatus').value
       };
 
       materials.unshift(newItem);
       renderUI();
       closeModal();
       document.getElementById('materialForm').reset();
+      document.getElementById('newSiteFields').style.display = 'none';
+    });
+
+    // --- Edit Inventory Item Modal Logic ---
+    function openEditModal(id) {
+      const item = materials.find(m => m.id === id);
+      if(!item) return;
+
+      document.getElementById('editId').value = item.id;
+      document.getElementById('editName').value = item.name;
+      document.getElementById('editQty').value = item.quantity;
+      document.getElementById('editStatus').value = item.status;
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+    }
+
+    document.getElementById('editForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = parseInt(document.getElementById('editId').value);
+      const item = materials.find(m => m.id === id);
+
+      if (item) {
+        item.name = document.getElementById('editName').value;
+        item.quantity = parseInt(document.getElementById('editQty').value);
+        item.status = document.getElementById('editStatus').value;
+        renderUI();
+        closeEditModal();
+      }
     });
 
     // --- Delete Action ---
@@ -705,7 +850,13 @@
       renderUI();
     }
 
-    // --- CSV Export ---
+    // --- Settings & CSV Export ---
+    function saveSettings() {
+      popupLimit = parseInt(document.getElementById('sitePopupLimit').value) || 10;
+      localStorage.setItem('archhub_popup_limit', popupLimit);
+      updateMapPins();
+    }
+
     function exportCSV() {
       let csvStr = 'ID,Name,Category,Quantity,Site,Status\n';
       materials.forEach(m => {
@@ -721,11 +872,18 @@
     }
 
     function clearData() {
+      localStorage.clear();
       materials = [...defaultMaterials];
+      sites = [...defaultSites];
+      popupLimit = 10;
+      document.getElementById('sitePopupLimit').value = popupLimit;
       renderUI();
     }
 
-    function openModal() { document.getElementById('modal').style.display = 'flex'; }
+    function openModal() {
+      updateSiteDropdown();
+      document.getElementById('modal').style.display = 'flex';
+    }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     // Initial Render On Load
