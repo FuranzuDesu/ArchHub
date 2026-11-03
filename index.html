@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCHHUB - Construction Material Tracking System</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fdf8f6',
+                            100: '#fbeee9',
+                            200: '#f7d9ce',
+                            300: '#f0bca9',
+                            400: '#e58564',
+                            500: '#d85a38', // Main rust accent
+                            600: '#c05638',
+                            700: '#9f4229',
+                            800: '#813926',
+                            900: '#6a3224',
+                        },
+                        bgApp: '#F5F2EC',
+                        cardBg: '#FFFFFF',
+                        darkText: '#2D3748',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'Georgia', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F2EC;
+            color: #2D3748;
+        }
+        .serif-title {
+            font-family: 'Playfair Display', Georgia, serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #EAE5DC;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C05638;
+            border-radius: 4px;
+        }
+        .map-container {
+            border-radius: 1rem;
+            overflow: hidden;
+            z-index: 1;
+        }
+        /* Soft shadows matching image UI */
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+        }
+        .active-tab {
+            background-color: #c05638;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#F5F2EC] text-[#2D3748]">
+
+    <!-- MAIN WRAPPER -->
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-full lg:w-64 bg-[#F5F2EC] p-4 lg:p-6 flex flex-col justify-between shrink-0 border-r border-[#E5DFD3]">
+            <div>
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3 mb-8 px-2">
+                    <div class="w-10 h-10 rounded-lg bg-[#c05638] flex items-center justify-center text-white text-xl font-bold shadow-md">
+                        <i class="fa-solid font-bold">A</i>
+                    </div>
+                    <span class="text-2xl font-black tracking-wider text-[#2D3748] font-serif">ARCH<span class="text-[#c05638]">HUB</span></span>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="space-y-2" id="sidebarNav">
+                    <button onclick="switchView('dashboard')" data-view="dashboard" class="nav-item active-tab w-full flex items-center gap-4 px-4 py-3 text-base font-semibold text-[#5A6065] rounded-2xl transition duration-200">
+                        <i class="fa-solid fa-[#c05638] fa-house w-6 text-center text-lg"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button onclick="switchView('inventory')" data-view="inventory" class="nav-item w-full flex items-center gap-4 px-4 py-3 text-base font-semibold text-[#5A6065] hover:bg-[#EAE4D8] rounded-2xl transition duration-200">
+                        <i class="fa-solid fa-boxes-stacked w-6 text-center text-lg"></i>
+                        <span>Inventory</span>
+                    </button>
+                    <button onclick="switchView('deliveries')" data-view="deliveries" class="nav-item w-full flex items-center gap-4 px-4 py-3 text-base font-semibold text-[#5A6065] hover:bg-[#EAE4D8] rounded-2xl transition duration-200">
+                        <i class="fa-solid fa-truck-fast w-6 text-center text-lg"></i>
+                        <span>Deliveries</span>
+                    </button>
+                    <button onclick="switchView('mapview')" data-view="mapview" class="nav-item w-full flex items-center gap-4 px-4 py-3 text-base font-semibold text-[#5A6065] hover:bg-[#EAE4D8] rounded-2xl transition duration-200">
+                        <i class="fa-solid fa-location-dot w-6 text-center text-lg"></i>
+                        <span>Map View</span>
+                    </button>
+                    <button onclick="switchView('reports')" data-view="reports" class="nav-item w-full flex items-center gap-4 px-4 py-3 text-base font-semibold text-[#5A6065] hover:bg-[#EAE4D8] rounded-2xl transition duration-200">
+                        <i class="fa-solid fa-chart-pie w-6 text-center text-lg"></i>
+                        <span>Reports</span>
+                    </button>
+                    <button onclick="switchView('settings')" data-view="settings" class="nav-item w-full flex items-center gap-4 px-4 py-3 text-base font-semibold text-[#5A6065] hover:bg-[#EAE4D8] rounded-2xl transition duration-200">
+                        <i class="fa-solid fa-gear w-6 text-center text-lg"></i>
+                        <span>Settings</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Quick Action Button -->
+            <div class="mt-8">
+                <button onclick="openModal('addMaterialModal')" class="w-full bg-[#c05638] hover:bg-[#a9482e] text-white py-3 px-4 rounded-xl font-medium shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Log Shipment</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+            
+            <!-- TOP HEADER (Search, Notifications, Profile) -->
+            <header class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+                <!-- Search Bar -->
+                <div class="relative w-full sm:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" placeholder="Search materials, deliveries, projects..." 
+                        class="w-full bg-white pl-11 pr-4 py-3 rounded-full text-sm border-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#c05638] placeholder-gray-400">
+                </div>
+
+                <!-- Right Header Actions -->
+                <div class="flex items-center gap-4 self-end sm:self-auto">
+                    <!-- Notification Bell -->
+                    <div class="relative cursor-pointer bg-white p-3 rounded-full shadow-sm hover:shadow transition" onclick="toggleNotifications()">
+                        <i class="fa-regular fa-bell text-gray-700 text-lg"></i>
+                        <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                    </div>
+
+                    <!-- User Profile Avatar -->
+                    <div class="flex items-center gap-3 bg-white pl-3 pr-4 py-1.5 rounded-full shadow-sm cursor-pointer border border-gray-100">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">
+                            JS
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- DYNAMIC VIEW CONTAINER -->
+            <div id="viewContainer">
+                
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="view-dashboard" class="space-y-8">
+                    
+                    <!-- View Title -->
+                    <div>
+                        <h1 class="text-3xl font-serif font-bold text-[#2D3748]">Material Tracking Overview</h1>
+                        <p class="text-gray-600 mt-1">Real-time inventory status, site locations and alerts across all projects.</p>
+                    </div>
+
+                    <!-- 4 SUMMARY METRIC CARDS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Total Materials -->
+                        <div onclick="switchView('inventory')" class="bg-white p-5 rounded-2xl card-shadow flex items-center justify-between cursor-pointer hover:translate-y-[-2px] transition border border-transparent hover:border-orange-100">
+                            <div>
+                                <div class="flex items-center gap-1 text-sm text-gray-500 font-medium">
+                                    <span>Total Materials</span>
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </div>
+                                <div class="text-3xl font-bold mt-2 text-[#2D3748]" id="metricTotal">1,240</div>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-[#c05638] flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                        </div>
+
+                        <!-- Low Stock Items -->
+                        <div onclick="filterInventory('Low Stock')" class="bg-white p-5 rounded-2xl card-shadow flex items-center justify-between cursor-pointer hover:translate-y-[-2px] transition border border-transparent hover:border-amber-100">
+                            <div>
+                                <div class="flex items-center gap-1 text-sm text-gray-500 font-medium">
+                                    <span>Low Stock Items</span>
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </div>
+                                <div class="text-3xl font-bold mt-2 text-red-600" id="metricLowStock">8</div>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+
+                        <!-- Pending Deliveries -->
+                        <div onclick="switchView('deliveries')" class="bg-white p-5 rounded-2xl card-shadow flex items-center justify-between cursor-pointer hover:translate-y-[-2px] transition border border-transparent hover:border-blue-100">
+                            <div>
+                                <div class="flex items-center gap-1 text-sm text-gray-500 font-medium">
+                                    <span>Pending Deliveries</span>
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </div>
+                                <div class="text-3xl font-bold mt-2 text-[#2D3748]" id="metricPending">5</div>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-truck-moving"></i>
+                            </div>
+                        </div>
+
+                        <!-- Issues / Alarms -->
+                        <div onclick="filterInventory('Delayed')" class="bg-white p-5 rounded-2xl card-shadow flex items-center justify-between cursor-pointer hover:translate-y-[-2px] transition border border-transparent hover:border-red-100">
+                            <div>
+                                <div class="flex items-center gap-1 text-sm text-gray-500 font-medium">
+                                    <span>Issues / Alarms</span>
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </div>
+                                <div class="text-3xl font-bold mt-2 text-red-600" id="metricIssues">7</div>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-[#c05638] fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2 COLUMN GRID (MAP & INVENTORY ALERTS) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        <!-- Left Column: Site Material Locations (Map View) -->
+                        <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-bold text-[#2D3748]">Site Material Locations</h2>
+                                <button onclick="switchView('mapview')" class="text-sm font-medium text-gray-500 hover:text-[#c05638] flex items-center gap-1">
+                                    View Map <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Interactive Map UI Container -->
+                            <div class="relative w-full h-[360px] bg-slate-100 rounded-xl overflow-hidden border border-gray-100">
+                                <div id="dashboardMap" class="w-full h-full"></div>
+                                
+                                <!-- Floating Quick Legend -->
+                                <div class="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow text-xs space-y-1.5 border border-gray-200">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                        <span class="font-medium text-gray-700">Main Site (On Track)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                                        <span class="font-medium text-gray-700">Site B (Low Stock)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                                        <span class="font-medium text-gray-700">Site C (Delayed)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Inventory Alerts -->
+                        <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-bold text-[#2D3748]">Inventory Alerts</h2>
+                                <button onclick="switchView('inventory')" class="text-sm font-medium text-gray-500 hover:text-[#c05638] flex items-center gap-1">
+                                    View All <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- Alert Items List -->
+                            <div class="space-y-4 overflow-y-auto max-h-[360px] pr-1" id="alertsList">
+                                
+                                <!-- Item 1 -->
+                                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-amber-50/50 transition border border-gray-100">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-amber-100/70 flex items-center justify-center text-amber-800 text-xl overflow-hidden shrink-0">
+                                            <i class="fa-solid fa-cubes-stacked"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Cement (50 bag)</h4>
+                                            <p class="text-xs text-gray-500">Main Site</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Low Stock</span>
+                                        <p class="text-xs text-gray-500 mt-1">12 bags left</p>
+                                    </div>
+                                </div>
+
+                                <!-- Item 2 -->
+                                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-amber-50/50 transition border border-gray-100">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 text-xl overflow-hidden shrink-0">
+                                            <i class="fa-solid fa-bars"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Steel Bars (12 mm)</h4>
+                                            <p class="text-xs text-gray-500">Site B</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">In Transit</span>
+                                        <p class="text-xs text-gray-500 mt-1">ETA 2 days</p>
+                                    </div>
+                                </div>
+
+                                <!-- Item 3 -->
+                                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-amber-50/50 transition border border-gray-100">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-orange-100/70 flex items-center justify-center text-orange-800 text-xl overflow-hidden shrink-0">
+                                            <i class="fa-solid fa-[#c05638] fa-grip font-bold"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Bricks (1,000 pcs)</h4>
+                                            <p class="text-xs text-gray-500">Site C</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Delayed</span>
+                                        <p class="text-xs text-gray-500 mt-1">Supplier issue</p>
+                                    </div>
+                                </div>
+
+                                <!-- Item 4 -->
+                                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-amber-50/50 transition border border-gray-100">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-700 text-xl overflow-hidden shrink-0">
+                                            <i class="fa-solid fa-border-all"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Tiles (600 pcs)</h4>
+                                            <p class="text-xs text-gray-500">Main Site</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Low Stock</span>
+                                        <p class="text-xs text-gray-500 mt-1">20 pcs left</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- 2. INVENTORY FULL VIEW -->
+                <section id="view-inventory" class="hidden space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-serif font-bold text-[#2D3748]">Material Inventory</h1>
+                            <p class="text-gray-600 mt-1">Detailed inventory levels, locations, and spec checks.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="openModal('addMaterialModal')" class="bg-[#c05638] hover:bg-[#a9482e] text-white px-4 py-2.5 rounded-xl font-medium shadow flex items-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Add New Material
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Tabs -->
+                    <div class="bg-white p-4 rounded-2xl card-shadow flex flex-wrap gap-2">
+                        <button onclick="filterInventory('All')" class="inv-filter-btn bg-[#c05638] text-white px-4 py-2 rounded-xl text-sm font-medium">All Materials</button>
+                        <button onclick="filterInventory('In Stock')" class="inv-filter-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium">In Stock</button>
+                        <button onclick="filterInventory('Low Stock')" class="inv-filter-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium">Low Stock</button>
+                        <button onclick="filterInventory('In Transit')" class="inv-filter-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium">In Transit</button>
+                        <button onclick="filterInventory('Delayed')" class="inv-filter-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium">Delayed / Issues</button>
+                    </div>
+
+                    <!-- Inventory Table -->
+                    <div class="bg-white rounded-2xl card-shadow overflow-hidden border border-gray-100">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase">
+                                        <th class="p-4">Material Name</th>
+                                        <th class="p-4">SKU / Code</th>
+                                        <th class="p-4">Location Site</th>
+                                        <th class="p-4">Quantity</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4">Spec Approval</th>
+                                        <th class="p-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody" class="divide-y divide-gray-100 text-sm">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. DELIVERIES VIEW -->
+                <section id="view-deliveries" class="hidden space-y-6">
+                    <div>
+                        <h1 class="text-3xl font-serif font-bold text-[#2D3748]">Shipment & Delivery Tracking</h1>
+                        <p class="text-gray-600 mt-1">Track material shipments in transit to prevent construction interruptions.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="deliveriesGrid">
+                        <!-- Content dynamically loaded via JS -->
+                    </div>
+                </section>
+
+                <!-- 4. MAP FULL VIEW -->
+                <section id="view-mapview" class="hidden space-y-6">
+                    <div>
+                        <h1 class="text-3xl font-serif font-bold text-[#2D3748]">Geographic Site Monitor</h1>
+                        <p class="text-gray-600 mt-1">Interactive geographic status of all active construction sites.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl card-shadow">
+                        <div id="fullMap" class="w-full h-[600px] rounded-xl"></div>
+                    </div>
+                </section>
+
+                <!-- 5. REPORTS VIEW -->
+                <section id="view-reports" class="hidden space-y-6">
+                    <div>
+                        <h1 class="text-3xl font-serif font-bold text-[#2D3748]">Material Control Reports</h1>
+                        <p class="text-gray-600 mt-1">Analysis on material waste, cost variations, and spec compliance.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl card-shadow">
+                            <h3 class="font-bold text-gray-800 mb-4">Material Loss & Damaged Summary</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Cement Bags (Damaged by Rain)</span>
+                                        <span class="font-semibold text-red-600">15 Bags ($180)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2">
+                                        <div class="bg-red-500 h-2 rounded-full" style="width: 45%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Steel Rods (Over-ordered/Waste)</span>
+                                        <span class="font-semibold text-amber-600">8 Units ($340)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2">
+                                        <div class="bg-amber-500 h-2 rounded-full" style="width: 30%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Bricks (Broken in transit)</span>
+                                        <span class="font-semibold text-yellow-600">120 Pcs ($110)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2">
+                                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 20%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl card-shadow">
+                            <h3 class="font-bold text-gray-800 mb-4">Quality & Spec Verification Status</h3>
+                            <div class="flex items-center justify-around py-6">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 rounded-full border-4 border-emerald-500 flex items-center justify-center text-xl font-bold text-emerald-600 mx-auto">
+                                        94%
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2 font-medium">Approved Specs</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-20 h-20 rounded-full border-4 border-red-500 flex items-center justify-center text-xl font-bold text-red-600 mx-auto">
+                                        6%
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2 font-medium">Rejected / Non-Spec</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. SETTINGS VIEW -->
+                <section id="view-settings" class="hidden space-y-6">
+                    <div>
+                        <h1 class="text-3xl font-serif font-bold text-[#2D3748]">System Settings</h1>
+                        <p class="text-gray-600 mt-1">Configure threshold alerts, sites, and spec parameters.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl card-shadow max-w-2xl space-y-6">
+                        <div>
+                            <h3 class="font-bold text-gray-800 mb-3">Alert Thresholds</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Low Stock Alert Level</span>
+                                    <input type="number" value="20" class="w-24 border rounded-lg p-2 text-sm text-right">
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Automatic Delay Warning (Days)</span>
+                                    <input type="number" value="3" class="w-24 border rounded-lg p-2 text-sm text-right">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="border-gray-100">
+
+                        <div>
+                            <h3 class="font-bold text-gray-800 mb-3">Site Notifications</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-3 text-sm text-gray-700">
+                                    <input type="checkbox" checked class="rounded text-[#c05638] focus:ring-[#c05638]">
+                                    Email alerts for non-spec materials delivered
+                                </label>
+                                <label class="flex items-center gap-3 text-sm text-gray-700">
+                                    <input type="checkbox" checked class="rounded text-[#c05638] focus:ring-[#c05638]">
+                                    SMS notifications for critical low stock
+                                </label>
+                            </div>
+                        </div>
+
+                        <button class="bg-[#c05638] text-white px-6 py-2.5 rounded-xl text-sm font-medium">Save Settings</button>
+                    </div>
+                </section>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL: LOG NEW SHIPMENT / MATERIAL -->
+    <div id="addMaterialModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[2000] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl card-shadow p-6 space-y-5 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold font-serif text-gray-800">Log New Material / Delivery</h3>
+                <button onclick="closeModal('addMaterialModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="addMaterialForm" onsubmit="handleCreateMaterial(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Material Name</label>
+                    <input type="text" required id="formName" placeholder="e.g. Concrete Rebar 16mm" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#c05638] outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">SKU / Code</label>
+                        <input type="text" required id="formSku" placeholder="MAT-9082" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#c05638] outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Location Site</label>
+                        <select id="formSite" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#c05638] outline-none">
+                            <option value="Main Site">Main Site</option>
+                            <option value="Site B">Site B</option>
+                            <option value="Site C">Site C</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Quantity</label>
+                        <input type="number" required id="formQty" placeholder="100" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#c05638] outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Status</label>
+                        <select id="formStatus" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#c05638] outline-none">
+                            <option value="In Stock">In Stock</option>
+                            <option value="Low Stock">Low Stock</option>
+                            <option value="In Transit">In Transit</option>
+                            <option value="Delayed">Delayed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Spec Inspection Verification</label>
+                    <select id="formSpec" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#c05638] outline-none">
+                        <option value="Approved">Approved (Meets Specs)</option>
+                        <option value="Pending">Pending Inspection</option>
+                        <option value="Rejected">Rejected (Substandard)</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeModal('addMaterialModal')" class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#c05638] hover:bg-[#a9482e] text-white text-sm font-medium">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: SITE DETAILS (Triggered from Map) -->
+    <div id="siteDetailsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[2000] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl card-shadow p-6 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div>
+                    <h3 class="text-xl font-bold font-serif text-gray-800" id="modalSiteTitle">Main Site Overview</h3>
+                    <p class="text-xs text-gray-500" id="modalSiteStatus">Status: On Track</p>
+                </div>
+                <button onclick="closeModal('siteDetailsModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3" id="modalSiteContent">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="pt-2 text-right">
+                <button onclick="closeModal('siteDetailsModal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-xl font-medium">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- MAIN APP JAVASCRIPT LOGIC -->
+    <script>
+        // Sample Initial Material Data
+        let materials = [
+            { id: 1, name: 'Cement (50 bag)', sku: 'MAT-1029', site: 'Main Site', qty: 12, unit: 'bags', status: 'Low Stock', spec: 'Approved', note: '12 bags left' },
+            { id: 2, name: 'Steel Bars (12 mm)', sku: 'MAT-4482', site: 'Site B', qty: 250, unit: 'units', status: 'In Transit', spec: 'Approved', note: 'ETA 2 days' },
+            { id: 3, name: 'Bricks (1,000 pcs)', sku: 'MAT-8812', site: 'Site C', qty: 1000, unit: 'pcs', status: 'Delayed', spec: 'Pending', note: 'Supplier issue' },
+            { id: 4, name: 'Tiles (600 pcs)', sku: 'MAT-3310', site: 'Main Site', qty: 20, unit: 'pcs', status: 'Low Stock', spec: 'Approved', note: '20 pcs left' },
+            { id: 5, name: 'Structural Rebar 16mm', sku: 'MAT-9912', site: 'Main Site', qty: 500, unit: 'bars', status: 'In Stock', spec: 'Approved', note: 'Good condition' },
+            { id: 6, name: 'Plywood Sheets (4x8)', sku: 'MAT-7721', site: 'Site B', qty: 85, unit: 'sheets', status: 'In Stock', spec: 'Approved', note: 'Stored safely' },
+            { id: 7, name: 'Ready-Mix Concrete', sku: 'MAT-6610', site: 'Site C', qty: 0, unit: 'trucks', status: 'Delayed', spec: 'Rejected', note: 'Failed slump test' },
+            { id: 8, name: 'PVC Pipes 4-inch', sku: 'MAT-1120', site: 'Site B', qty: 15, unit: 'pipes', status: 'Low Stock', spec: 'Approved', note: '15 pcs left' },
+        ];
+
+        let dashboardMapInstance = null;
+        let fullMapInstance = null;
+
+        // Initialize App on DOM Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            renderInventoryTable(materials);
+            renderDeliveries();
+            initDashboardMap();
+
+            // Search Filter Event listener
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const filtered = materials.filter(m => 
+                    m.name.toLowerCase().includes(term) || 
+                    m.site.toLowerCase().includes(term) || 
+                    m.sku.toLowerCase().includes(term)
+                );
+                renderInventoryTable(filtered);
+            });
+        });
+
+        // View Switcher logic
+        function switchView(viewName) {
+            // Update active state in sidebar
+            document.querySelectorAll('#sidebarNav .nav-item').forEach(btn => {
+                if(btn.getAttribute('data-view') === viewName) {
+                    btn.classList.add('active-tab');
+                    btn.classList.remove('hover:bg-[#EAE4D8]');
+                } else {
+                    btn.classList.remove('active-tab');
+                    btn.classList.add('hover:bg-[#EAE4D8]');
+                }
+            });
+
+            // Hide all view sections
+            const views = ['dashboard', 'inventory', 'deliveries', 'mapview', 'reports', 'settings'];
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.add('hidden');
+            });
+
+            // Show current view section
+            const activeView = document.getElementById(`view-${viewName}`);
+            if (activeView) activeView.classList.remove('hidden');
+
+            // Handle Full Map lazy render
+            if (viewName === 'mapview') {
+                setTimeout(() => {
+                    initFullMap();
+                }, 100);
+            }
+        }
+
+        // Render Inventory Table
+        function renderInventoryTable(data) {
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-6 text-gray-500">No matching materials found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let statusBadge = '';
+                if(item.status === 'In Stock') statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">In Stock</span>';
+                else if(item.status === 'Low Stock') statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Low Stock</span>';
+                else if(item.status === 'In Transit') statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">In Transit</span>';
+                else statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Delayed</span>';
+
+                let specBadge = '';
+                if(item.spec === 'Approved') specBadge = '<span class="text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Approved</span>';
+                else if(item.spec === 'Pending') specBadge = '<span class="text-xs text-amber-600 font-semibold"><i class="fa-solid fa-clock mr-1"></i>Pending</span>';
+                else specBadge = '<span class="text-xs text-red-600 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Rejected</span>';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 border-b border-gray-100';
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-gray-800">${item.name}</td>
+                    <td class="p-4 text-gray-500 font-mono text-xs">${item.sku}</td>
+                    <td class="p-4 text-gray-600">${item.site}</td>
+                    <td class="p-4 font-medium">${item.qty} ${item.unit}</td>
+                    <td class="p-4">${statusBadge}</td>
+                    <td class="p-4">${specBadge}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="deleteMaterial(${item.id})" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Filter inventory helper
+        function filterInventory(status) {
+            switchView('inventory');
+            
+            // Highlight filter buttons
+            document.querySelectorAll('.inv-filter-btn').forEach(btn => {
+                if(btn.innerText.includes(status)) {
+                    btn.className = 'inv-filter-btn bg-[#c05638] text-white px-4 py-2 rounded-xl text-sm font-medium';
+                } else {
+                    btn.className = 'inv-filter-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium';
+                }
+            });
+
+            if (status === 'All') {
+                renderInventoryTable(materials);
+            } else {
+                const filtered = materials.filter(m => m.status === status);
+                renderInventoryTable(filtered);
+            }
+        }
+
+        // Render Deliveries Card Grid
+        function renderDeliveries() {
+            const container = document.getElementById('deliveriesGrid');
+            const inTransit = materials.filter(m => m.status === 'In Transit' || m.status === 'Delayed');
+
+            container.innerHTML = '';
+
+            inTransit.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-2xl card-shadow border border-gray-100 space-y-3';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${item.status === 'Delayed' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}">${item.status}</span>
+                        <span class="text-xs text-gray-400 font-mono">${item.sku}</span>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-lg">${item.name}</h3>
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <p><i class="fa-solid fa-location-dot w-4"></i> Destination: <strong class="text-gray-700">${item.site}</strong></p>
+                        <p><i class="fa-solid fa-boxes-stacked w-4"></i> Quantity: <strong class="text-gray-700">${item.qty} ${item.unit}</strong></p>
+                        <p><i class="fa-solid fa-truck-moving w-4"></i> Info: <strong class="text-gray-700">${item.note}</strong></p>
+                    </div>
+                    <button onclick="markAsDelivered(${item.id})" class="w-full mt-2 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl font-medium text-xs transition">
+                        Confirm Check-In Arrival
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Confirm Arrival
+        function markAsDelivered(id) {
+            const item = materials.find(m => m.id === id);
+            if(item) {
+                item.status = 'In Stock';
+                item.note = 'Checked in at site';
+                renderInventoryTable(materials);
+                renderDeliveries();
+                updateMetrics();
+            }
+        }
+
+        // Delete item helper
+        function deleteMaterial(id) {
+            materials = materials.filter(m => m.id !== id);
+            renderInventoryTable(materials);
+            updateMetrics();
+        }
+
+        // Modal triggers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Add new shipment submit handler
+        function handleCreateMaterial(e) {
+            e.preventDefault();
+            const name = document.getElementById('formName').value;
+            const sku = document.getElementById('formSku').value;
+            const site = document.getElementById('formSite').value;
+            const qty = parseInt(document.getElementById('formQty').value);
+            const status = document.getElementById('formStatus').value;
+            const spec = document.getElementById('formSpec').value;
+
+            const newItem = {
+                id: Date.now(),
+                name,
+                sku,
+                site,
+                qty,
+                unit: 'units',
+                status,
+                spec,
+                note: status === 'Low Stock' ? 'Low stock reported' : 'Newly logged'
+            };
+
+            materials.unshift(newItem);
+            renderInventoryTable(materials);
+            renderDeliveries();
+            updateMetrics();
+
+            closeModal('addMaterialModal');
+            document.getElementById('addMaterialForm').reset();
+        }
+
+        // Dynamic metrics update
+        function updateMetrics() {
+            document.getElementById('metricTotal').innerText = materials.length * 155; // visual scale multiplier
+            document.getElementById('metricLowStock').innerText = materials.filter(m => m.status === 'Low Stock').length;
+            document.getElementById('metricPending').innerText = materials.filter(m => m.status === 'In Transit').length;
+            document.getElementById('metricIssues').innerText = materials.filter(m => m.status === 'Delayed' || m.spec === 'Rejected').length;
+        }
+
+        // MAPS LOGIC (Leaflet.js)
+        const siteCoords = {
+            'Main Site': { lat: 14.5995, lng: 120.9842, status: 'On Track', color: '#10B981' }, // Green
+            'Site B': { lat: 14.5800, lng: 121.0300, status: 'Low Stock', color: '#F59E0B' },  // Amber
+            'Site C': { lat: 14.6200, lng: 121.0500, status: 'Delayed', color: '#EF4444' }     // Red
+        };
+
+        function initDashboardMap() {
+            if (dashboardMapInstance) return;
+
+            dashboardMapInstance = L.map('dashboardMap', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([14.6000, 121.0100], 11);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19
+            }).addTo(dashboardMapInstance);
+
+            addPinsToMap(dashboardMapInstance);
+        }
+
+        function initFullMap() {
+            if (fullMapInstance) {
+                fullMapInstance.invalidateSize();
+                return;
+            }
+
+            fullMapInstance = L.map('fullMap').setView([14.6000, 121.0100], 12);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(fullMapInstance);
+
+            addPinsToMap(fullMapInstance);
+        }
+
+        function addPinsToMap(mapObj) {
+            Object.keys(siteCoords).forEach(siteName => {
+                const info = siteCoords[siteName];
+
+                // Create custom SVG Marker
+                const customIcon = L.divIcon({
+                    className: 'custom-pin',
+                    html: `<div style="background-color: ${info.color}" class="w-7 h-7 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-bold">
+                            <i class="fa-solid fa-location-dot"></i>
+                           </div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 28]
+                });
+
+                const marker = L.marker([info.lat, info.lng], { icon: customIcon }).addTo(mapObj);
+                
+                marker.on('click', () => {
+                    openSiteDetails(siteName, info.status);
+                });
+            });
+        }
+
+        // Open details modal for map pin click
+        function openSiteDetails(siteName, status) {
+            document.getElementById('modalSiteTitle').innerText = siteName;
+            document.getElementById('modalSiteStatus').innerText = `Current Status: ${status}`;
+
+            const siteMaterials = materials.filter(m => m.site === siteName);
+            const content = document.getElementById('modalSiteContent');
+
+            if(siteMaterials.length === 0) {
+                content.innerHTML = `<p class="text-sm text-gray-500">No active materials linked to this site.</p>`;
+            } else {
+                content.innerHTML = siteMaterials.map(m => `
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 text-xs">
+                        <div>
+                            <p class="font-bold text-gray-800">${m.name}</p>
+                            <p class="text-gray-500">${m.qty} ${m.unit}</p>
+                        </div>
+                        <span class="font-semibold text-gray-700">${m.status}</span>
+                    </div>
+                `).join('');
+            }
+
+            openModal('siteDetailsModal');
+        }
+
+        // Notification Toggle demo
+        function toggleNotifications() {
+            alert('ArchHub Notification: 2 material shipments currently require inspection approval.');
+        }
+    </script>
+</body>
+</html>
