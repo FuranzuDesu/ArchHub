@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -51,6 +52,8 @@ app.post('/api/materials', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.use(express.static(path.join(__dirname)));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
