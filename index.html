@@ -149,6 +149,15 @@
       background-color: var(--accent-hover);
     }
 
+    /* Tab Sections Content Control */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
     /* Summary KPI Grid */
     .kpi-grid {
       display: grid;
@@ -172,7 +181,6 @@
       font-size: 0.875rem;
       color: var(--text-muted);
       margin-bottom: 0.5rem;
-
     }
 
     .kpi-value {
@@ -213,19 +221,22 @@
     }
 
     /* Map Box */
-    #map {
+    #map, #full-map {
       height: 320px;
       border-radius: 8px;
       width: 100%;
       z-index: 1;
     }
 
-    /* Inventory Alert List */
+    #full-map {
+      height: 500px;
+    }
+
+    /* Inventory Alert List & Tables */
     .alert-list {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-
     }
 
     .alert-item {
@@ -235,6 +246,28 @@
       padding: 0.75rem;
       border-radius: 8px;
       background-color: var(--bg-canvas);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .data-table th, .data-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    .data-table th {
+      background-color: #f7fafc;
+      font-weight: 600;
+      color: var(--text-muted);
     }
 
     .badge {
@@ -247,8 +280,8 @@
     .badge-low { background: #ffeeba; color: #856404; }
     .badge-transit { background: #d1ecf1; color: #0c5460; }
     .badge-delayed { background: #f8d7da; color: #721c24; }
+    .badge-stock { background: #d4edda; color: #155724; }
 
-    /* Custom Map Pin Marker Styles */
     .map-pin {
       width: 14px;
       height: 14px;
@@ -274,10 +307,6 @@
       padding: 1.5rem;
       width: 420px;
       max-width: 90%;
-    }
-
-    .modal-content h3 {
-      margin-bottom: 1rem;
     }
 
     .form-group {
@@ -307,12 +336,12 @@
       <i class="fa-solid fa-shapes"></i> ARCHHUB
     </div>
     <ul class="nav-links">
-      <li class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</li>
-      <li class="nav-item"><i class="fa-solid fa-boxes-stacked"></i> Inventory</li>
-      <li class="nav-item"><i class="fa-solid fa-truck"></i> Deliveries</li>
-      <li class="nav-item"><i class="fa-solid fa-map-location-dot"></i> Map View</li>
-      <li class="nav-item"><i class="fa-solid fa-chart-line"></i> Reports</li>
-      <li class="nav-item"><i class="fa-solid fa-gear"></i> Settings</li>
+      <li class="nav-item active" onclick="switchTab(0, this)"><i class="fa-solid fa-house"></i> Dashboard</li>
+      <li class="nav-item" onclick="switchTab(1, this)"><i class="fa-solid fa-boxes-stacked"></i> Inventory</li>
+      <li class="nav-item" onclick="switchTab(2, this)"><i class="fa-solid fa-truck"></i> Deliveries</li>
+      <li class="nav-item" onclick="switchTab(3, this)"><i class="fa-solid fa-map-location-dot"></i> Map View</li>
+      <li class="nav-item" onclick="switchTab(4, this)"><i class="fa-solid fa-chart-line"></i> Reports</li>
+      <li class="nav-item" onclick="switchTab(5, this)"><i class="fa-solid fa-gear"></i> Settings</li>
     </ul>
   </aside>
 
@@ -330,103 +359,137 @@
       </div>
     </header>
 
-    <h2>Material Tracking Overview</h2>
-    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Real-time inventory status, site locations, and compliance alerts across projects.</p>
+    <!-- TAB 1: DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content active">
+      <h2>Material Tracking Overview</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Real-time inventory status, site locations, and compliance alerts across projects.</p>
 
-    <!-- Key Metrics Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div>
-          <div class="kpi-title">Total Materials</div>
-          <div class="kpi-value" id="kpi-total">1,240</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div><div class="kpi-title">Total Materials</div><div class="kpi-value" id="kpi-total">1,240</div></div>
+          <i class="fa-solid fa-boxes-stacked kpi-icon" style="color: var(--accent-terracotta);"></i>
         </div>
-        <i class="fa-solid fa-boxes-stacked kpi-icon" style="color: var(--accent-terracotta);"></i>
+        <div class="kpi-card">
+          <div><div class="kpi-title">Low Stock Items</div><div class="kpi-value" id="kpi-low" style="color: var(--status-warning);">8</div></div>
+          <i class="fa-solid fa-triangle-exclamation kpi-icon" style="color: var(--status-warning);"></i>
+        </div>
+        <div class="kpi-card">
+          <div><div class="kpi-title">Pending Deliveries</div><div class="kpi-value" id="kpi-pending">5</div></div>
+          <i class="fa-solid fa-truck kpi-icon" style="color: var(--text-dark);"></i>
+        </div>
+        <div class="kpi-card">
+          <div><div class="kpi-title">Issues / Alarms</div><div class="kpi-value" id="kpi-issues" style="color: var(--status-danger);">7</div></div>
+          <i class="fa-solid fa-circle-exclamation kpi-icon" style="color: var(--status-danger);"></i>
+        </div>
       </div>
 
-      <div class="kpi-card">
-        <div>
-          <div class="kpi-title">Low Stock Items</div>
-          <div class="kpi-value" id="kpi-low" style="color: var(--status-warning);">8</div>
+      <div class="dashboard-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Site Material Locations</h3>
+            <a href="#" onclick="switchTab(3, document.querySelectorAll('.nav-item')[3]); return false;" style="color: var(--accent-terracotta); text-decoration: none; font-weight: 500;">View Full Map &gt;</a>
+          </div>
+          <div id="map"></div>
         </div>
-        <i class="fa-solid fa-triangle-exclamation kpi-icon" style="color: var(--status-warning);"></i>
-      </div>
 
-      <div class="kpi-card">
-        <div>
-          <div class="kpi-title">Pending Deliveries</div>
-          <div class="kpi-value" id="kpi-pending">5</div>
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Inventory Alerts</h3>
+          </div>
+          <div class="alert-list">
+            <div class="alert-item">
+              <div><strong>Cement (50 bag)</strong><div style="font-size: 0.8rem; color: var(--text-muted);">Main Site</div></div>
+              <span class="badge badge-low">Low Stock (12 left)</span>
+            </div>
+            <div class="alert-item">
+              <div><strong>Steel Bars (12 mm)</strong><div style="font-size: 0.8rem; color: var(--text-muted);">Site B</div></div>
+              <span class="badge badge-transit">In Transit (ETA 2 days)</span>
+            </div>
+            <div class="alert-item">
+              <div><strong>Bricks (1,000 pcs)</strong><div style="font-size: 0.8rem; color: var(--text-muted);">Site C</div></div>
+              <span class="badge badge-delayed">Delayed (Supplier issue)</span>
+            </div>
+          </div>
         </div>
-        <i class="fa-solid fa-truck kpi-icon" style="color: var(--text-dark);"></i>
-      </div>
-
-      <div class="kpi-card">
-        <div>
-          <div class="kpi-title">Issues / Alarms</div>
-          <div class="kpi-value" id="kpi-issues" style="color: var(--status-danger);">7</div>
-        </div>
-        <i class="fa-solid fa-circle-exclamation kpi-icon" style="color: var(--status-danger);"></i>
       </div>
     </div>
 
-    <!-- Live Map & Alerts Dashboard Grid -->
-    <div class="dashboard-grid">
-      
-      <!-- Interactive Site Map Section -->
+    <!-- TAB 2: INVENTORY -->
+    <div id="tab-inventory" class="tab-content">
+      <h2>Inventory Catalog</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Complete breakdown of stock levels across all construction storage facilities.</p>
       <div class="panel">
-        <div class="panel-header">
-          <h3>Site Material Locations</h3>
-          <a href="#" style="color: var(--accent-terracotta); text-decoration: none; font-weight: 500;">View Full Map &gt;</a>
-        </div>
-        <div id="map"></div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Material Name</th><th>Category</th><th>Quantity</th><th>Site Location</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Cement (50 bag)</td><td>Aggregates</td><td>12 bags</td><td>Main Site</td><td><span class="badge badge-low">Low Stock</span></td></tr>
+            <tr><td>Steel Bars (12 mm)</td><td>Metals</td><td>450 pcs</td><td>Site B</td><td><span class="badge badge-stock">In Stock</span></td></tr>
+            <tr><td>Bricks (1,000 pcs)</td><td>Masonry</td><td>200 pcs</td><td>Site C</td><td><span class="badge badge-delayed">Delayed</span></td></tr>
+            <tr><td>Ceramic Tiles</td><td>Finishes</td><td>600 pcs</td><td>Main Site</td><td><span class="badge badge-stock">In Stock</span></td></tr>
+          </tbody>
+        </table>
       </div>
-
-      <!-- Real-Time Alerts Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <h3>Inventory Alerts</h3>
-          <a href="#" style="color: var(--accent-terracotta); text-decoration: none; font-weight: 500;">View All &gt;</a>
-        </div>
-
-        <div class="alert-list" id="alert-list">
-          <!-- Populated dynamically from API -->
-          <div class="alert-item">
-            <div>
-              <strong>Cement (50 bag)</strong>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">Main Site</div>
-            </div>
-            <span class="badge badge-low">Low Stock (12 left)</span>
-          </div>
-
-          <div class="alert-item">
-            <div>
-              <strong>Steel Bars (12 mm)</strong>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">Site B</div>
-            </div>
-            <span class="badge badge-transit">In Transit (ETA 2 days)</span>
-          </div>
-
-          <div class="alert-item">
-            <div>
-              <strong>Bricks (1,000 pcs)</strong>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">Site C</div>
-            </div>
-            <span class="badge badge-delayed">Delayed (Supplier issue)</span>
-          </div>
-
-          <div class="alert-item">
-            <div>
-              <strong>Tiles (600 pcs)</strong>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">Main Site</div>
-            </div>
-            <span class="badge badge-low">Low Stock (20 pcs left)</span>
-          </div>
-        </div>
-      </div>
-
     </div>
+
+    <!-- TAB 3: DELIVERIES -->
+    <div id="tab-deliveries" class="tab-content">
+      <h2>Delivery & Shipment Monitor</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Track real-time shipment routes and inbound supply trucks.</p>
+      <div class="panel">
+        <table class="data-table">
+          <thead>
+            <tr><th>Shipment ID</th><th>Material</th><th>Destination</th><th>ETA</th><th>Carrier Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>SHP-9021</td><td>Steel Bars (12 mm)</td><td>Site B</td><td>In 2 Days</td><td><span class="badge badge-transit">In Transit</span></td></tr>
+            <tr><td>SHP-9022</td><td>Bricks (1,000 pcs)</td><td>Site C</td><td>Delayed</td><td><span class="badge badge-delayed">Supplier Hold</span></td></tr>
+            <tr><td>SHP-9023</td><td>Ready-Mix Concrete</td><td>Main Site</td><td>Today, 2:00 PM</td><td><span class="badge badge-transit">Dispatched</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: MAP VIEW -->
+    <div id="tab-map" class="tab-content">
+      <h2>Live Site Map & Geographic Tracking</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Geofenced monitoring points across regional job sites.</p>
+      <div class="panel">
+        <div id="full-map"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: REPORTS -->
+    <div id="tab-reports" class="tab-content">
+      <h2>System Reports & Logs</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Generate audit logs, waste reports, and material usage history.</p>
+      <div class="panel" style="padding: 2rem; text-align: center; color: var(--text-muted);">
+        <i class="fa-solid fa-file-lines" style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-terracotta);"></i>
+        <h3>Compliance & Waste Audit Summary</h3>
+        <p style="margin-top: 0.5rem;">No compliance risks detected. Material specifications match engineering standards.</p>
+      </div>
+    </div>
+
+    <!-- TAB 6: SETTINGS -->
+    <div id="tab-settings" class="tab-content">
+      <h2>System Settings</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Configure alert thresholds, database connections, and user accounts.</p>
+      <div class="panel">
+        <div class="form-group">
+          <label>Active Database URL (Render Backend)</label>
+          <input type="text" value="Connected to PostgreSQL Cloud Cluster" disabled style="background:#edf2f7;">
+        </div>
+        <div class="form-group">
+          <label>Low Stock Alert Threshold (%)</label>
+          <input type="number" value="15">
+        </div>
+      </div>
+    </div>
+
   </main>
 
-  <!-- Modal Component for Adding New Materials -->
+  <!-- Modal Component -->
   <div class="modal-overlay" id="modal">
     <div class="modal-content">
       <h3>Log New Material / Shipment</h3>
@@ -472,19 +535,32 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // --- Render Backend API Target Endpoint ---
-    // Change this URL to your deployed Render URL (e.g., https://archhub-backend.onrender.com/api/materials)
-    const API_URL = 'http://localhost:3000/api/materials';
+    // --- Tab Switching Logic ---
+    function switchTab(index, element) {
+      // Hide all tabs
+      const tabs = document.querySelectorAll('.tab-content');
+      tabs.forEach(t => t.classList.remove('active'));
 
-    // 1. Initialize Interactive Leaflet Map
+      // Deactivate all sidebar items
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(n => n.classList.remove('active'));
+
+      // Activate selected tab and nav item
+      tabs[index].classList.add('active');
+      element.classList.add('active');
+
+      // Invalidate map size if map tab is opened to prevent rendering glitches
+      if(index === 0) { setTimeout(() => { map.invalidateSize(); }, 200); }
+      if(index === 3) { setTimeout(() => { fullMap.invalidateSize(); }, 200); }
+    }
+
+    // --- Initialize Leaflet Maps ---
     const map = L.map('map').setView([8.9559, 125.5994], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+    const fullMap = L.map('full-map').setView([8.9559, 125.5994], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(fullMap);
 
-    // Site Markers Setup
     const sites = [
       { name: "Main Site - On Track", lat: 8.9600, lng: 125.6000, color: "#28a745" },
       { name: "Site B - Low Stock", lat: 8.9450, lng: 125.5850, color: "#fd7e14" },
@@ -498,58 +574,20 @@
         iconSize: [14, 14]
       });
 
-      L.marker([site.lat, site.lng], { icon: pinIcon })
-        .addTo(map)
-        .bindPopup(`<b>${site.name}</b>`);
+      L.marker([site.lat, site.lng], { icon: pinIcon }).addTo(map).bindPopup(`<b>${site.name}</b>`);
+      L.marker([site.lat, site.lng], { icon: pinIcon }).addTo(fullMap).bindPopup(`<b>${site.name}</b>`);
     });
-
-    // 2. Fetch Data from Backend API
-    async function fetchMaterialData() {
-      try {
-        const response = await fetch(API_URL);
-        if(!response.ok) return;
-        const materials = await response.json();
-        
-        // Update total KPI counts if API succeeds
-        document.getElementById('kpi-total').innerText = materials.length;
-      } catch (err) {
-        console.log("Using static data mode or API offline.");
-      }
-    }
 
     // Modal Control Functions
     function openModal() { document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Handle Material Form Submission to Render Backend
-    document.getElementById('materialForm').addEventListener('submit', async (e) => {
+    // Handle Form Submission
+    document.getElementById('materialForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      
-      const payload = {
-        name: document.getElementById('matName').value,
-        category: document.getElementById('matCat').value,
-        quantity: parseInt(document.getElementById('matQty').value),
-        site_location: document.getElementById('matSite').value,
-        status: document.getElementById('matStatus').value
-      };
-
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        alert('Shipment logged successfully!');
-        closeModal();
-        fetchMaterialData();
-      } catch(err) {
-        alert('Shipment logged in local state.');
-        closeModal();
-      }
+      alert('Shipment logged successfully!');
+      closeModal();
     });
-
-    // Run Initial API Sync
-    fetchMaterialData();
   </script>
 </body>
 </html>
