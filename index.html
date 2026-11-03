@@ -15,12 +15,14 @@
   <style>
     :root {
       --bg-canvas: #F5F2EC;
-      --card-bg: #FFFFFF;
+      --card-bg: rgba(255, 255, 255, 0.85); /* Slightly translucent for blurry background effect */
       --accent-terracotta: #c05638;
       --accent-hover: #a3442a;
+      --olive-green: #556B2F;
+      --wood-orange: #d97706;
       --text-dark: #2D3748;
       --text-muted: #718096;
-      --border-color: #E2E8F0;
+      --border-color: rgba(226, 232, 240, 0.8);
       
       --status-success: #28a745;
       --status-warning: #fd7e14;
@@ -35,33 +37,95 @@
       font-family: 'Inter', sans-serif;
     }
 
+    /* Minimal Blurry Animated Background */
     body {
-      background-color: var(--bg-canvas);
+      background: linear-gradient(135deg, rgba(85, 107, 47, 0.25), rgba(217, 119, 6, 0.25), rgba(192, 86, 56, 0.2));
+      background-size: 400% 400%;
+      animation: subtleBackgroundShift 15s ease infinite;
       color: var(--text-dark);
       display: flex;
       min-height: 100vh;
+      overflow: hidden;
+    }
+
+    @keyframes subtleBackgroundShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     /* Sidebar Navigation */
     aside {
       width: 240px;
-      background-color: var(--card-bg);
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
       border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
       padding: 1.5rem 1rem;
       flex-shrink: 0;
+      transition: width 0.3s ease, padding 0.3s ease;
+      z-index: 100;
     }
 
-    .brand-logo {
+    aside.collapsed {
+      width: 72px;
+      padding: 1.5rem 0.5rem;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-left: 0.5rem;
+    }
+
+    .brand-logo-area {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .brand-logo-img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .brand-text-arch {
+      color: var(--olive-green);
+    }
+
+    .brand-text-hub {
       color: var(--accent-terracotta);
-      margin-bottom: 2rem;
-      padding-left: 0.5rem;
+    }
+
+    aside.collapsed .brand-logo-area span,
+    aside.collapsed .nav-item span {
+      display: none;
+    }
+
+    .sidebar-toggle-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      padding: 4px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background-color: rgba(0,0,0,0.05);
+      color: var(--text-dark);
     }
 
     .nav-links {
@@ -80,11 +144,19 @@
       color: var(--text-muted);
       cursor: pointer;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
       transition: all 0.2s ease;
     }
 
+    .nav-item i {
+      font-size: 1.1rem;
+      min-width: 20px;
+      text-align: center;
+    }
+
     .nav-item:hover, .nav-item.active {
-      background-color: var(--accent-terracotta);
+      background-color: var(--olive-green);
       color: #FFFFFF;
     }
 
@@ -93,6 +165,7 @@
       flex: 1;
       padding: 2rem;
       overflow-y: auto;
+      height: 100vh;
     }
 
     header {
@@ -113,7 +186,8 @@
       border-radius: 20px;
       border: 1px solid var(--border-color);
       outline: none;
-      background-color: #FFFFFF;
+      background-color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
     }
 
     .search-bar i {
@@ -166,20 +240,21 @@
 
     .kpi-card {
       background: var(--card-bg);
+      backdrop-filter: blur(10px);
       padding: 1.25rem;
       border-radius: 12px;
       border: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
       cursor: pointer;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
 
     .kpi-card:hover {
       transform: translateY(-2px);
-      border-color: var(--accent-terracotta);
+      border-color: var(--olive-green);
     }
 
     .kpi-title {
@@ -206,10 +281,11 @@
 
     .panel {
       background: var(--card-bg);
+      backdrop-filter: blur(10px);
       border-radius: 12px;
       padding: 1.25rem;
       border: 1px solid var(--border-color);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
       margin-bottom: 1.5rem;
     }
 
@@ -250,13 +326,13 @@
       justify-content: space-between;
       padding: 0.75rem;
       border-radius: 8px;
-      background-color: var(--bg-canvas);
+      background-color: rgba(255, 255, 255, 0.6);
     }
 
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      background: var(--card-bg);
+      background: transparent;
       border-radius: 8px;
       overflow: hidden;
     }
@@ -269,7 +345,7 @@
     }
 
     .data-table th {
-      background-color: #f7fafc;
+      background-color: rgba(247, 250, 252, 0.8);
       font-weight: 600;
       color: var(--text-muted);
     }
@@ -294,7 +370,7 @@
       font-size: 0.9rem;
       margin-right: 0.5rem;
     }
-    .edit-btn { color: var(--accent-terracotta); }
+    .edit-btn { color: var(--olive-green); }
     .delete-btn { color: var(--status-danger); }
 
     .map-pin {
@@ -310,7 +386,8 @@
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
       justify-content: center;
       align-items: center;
       z-index: 1000;
@@ -343,30 +420,26 @@
       border-radius: 6px;
       border: 1px solid var(--border-color);
     }
-
-    .brand-logo img {
-      width: 32px;
-      height: 32px;
-      object-fit: contain;
-      border-radius: 4px; /* Optional: rounds the logo edges slightly */
-    }
   </style>
 </head>
 <body>
 
   <!-- Left Navigation Sidebar -->
-  <aside>
-    <div class="brand-logo">
-      <img src="logo.png" alt="ARCHHUB Logo" id="brandLogoImg">
-      ARCHHUB
+  <aside id="sidebar">
+    <div class="brand-container">
+      <div class="brand-logo-area">
+        <img src="https://via.placeholder.com/32" alt="Logo" class="brand-logo-img">
+        <span><strong class="brand-text-arch">ARCH</strong><strong class="brand-text-hub">HUB</strong></span>
+      </div>
+      <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar"><i class="fa-solid fa-bars"></i></button>
     </div>
     <ul class="nav-links">
-      <li class="nav-item active" onclick="switchTab(0, this)"><i class="fa-solid fa-house"></i> Dashboard</li>
-      <li class="nav-item" onclick="switchTab(1, this)"><i class="fa-solid fa-boxes-stacked"></i> Inventory</li>
-      <li class="nav-item" onclick="switchTab(2, this)"><i class="fa-solid fa-truck"></i> Deliveries</li>
-      <li class="nav-item" onclick="switchTab(3, this)"><i class="fa-solid fa-map-location-dot"></i> Map View</li>
-      <li class="nav-item" onclick="switchTab(4, this)"><i class="fa-solid fa-chart-line"></i> Reports</li>
-      <li class="nav-item" onclick="switchTab(5, this)"><i class="fa-solid fa-gear"></i> Settings</li>
+      <li class="nav-item active" onclick="switchTab(0, this)" title="Dashboard"><i class="fa-solid fa-house"></i> <span>Dashboard</span></li>
+      <li class="nav-item" onclick="switchTab(1, this)" title="Inventory"><i class="fa-solid fa-boxes-stacked"></i> <span>Inventory</span></li>
+      <li class="nav-item" onclick="switchTab(2, this)" title="Deliveries"><i class="fa-solid fa-truck"></i> <span>Deliveries</span></li>
+      <li class="nav-item" onclick="switchTab(3, this)" title="Map View"><i class="fa-solid fa-map-location-dot"></i> <span>Map View</span></li>
+      <li class="nav-item" onclick="switchTab(4, this)" title="Reports"><i class="fa-solid fa-chart-line"></i> <span>Reports</span></li>
+      <li class="nav-item" onclick="switchTab(5, this)" title="Settings"><i class="fa-solid fa-gear"></i> <span>Settings</span></li>
     </ul>
   </aside>
 
@@ -392,7 +465,7 @@
       <div class="kpi-grid">
         <div class="kpi-card" onclick="filterAndSwitchTab(1, '')">
           <div><div class="kpi-title">Total Materials</div><div class="kpi-value" id="kpi-total">0</div></div>
-          <i class="fa-solid fa-boxes-stacked kpi-icon" style="color: var(--accent-terracotta);"></i>
+          <i class="fa-solid fa-boxes-stacked kpi-icon" style="color: var(--olive-green);"></i>
         </div>
         <div class="kpi-card" onclick="filterAndSwitchTab(1, 'Low Stock')">
           <div><div class="kpi-title">Low Stock Items</div><div class="kpi-value" id="kpi-low" style="color: var(--status-warning);">0</div></div>
@@ -412,7 +485,7 @@
         <div class="panel">
           <div class="panel-header">
             <h3>Site Material Locations</h3>
-            <a href="#" onclick="switchTab(3, document.querySelectorAll('.nav-item')[3]); return false;" style="color: var(--accent-terracotta); text-decoration: none; font-weight: 500;">View Full Map &gt;</a>
+            <a href="#" onclick="switchTab(3, document.querySelectorAll('.nav-item')[3]); return false;" style="color: var(--olive-green); text-decoration: none; font-weight: 500;">View Full Map &gt;</a>
           </div>
           <div id="map"></div>
         </div>
@@ -468,7 +541,7 @@
       <h2>System Reports & Audit Summary</h2>
       <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Material usage statistics and compliance verification status.</p>
       <div class="panel" style="padding: 2rem; text-align: center;">
-        <i class="fa-solid fa-file-shield" style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-terracotta);"></i>
+        <i class="fa-solid fa-file-shield" style="font-size: 3rem; margin-bottom: 1rem; color: var(--olive-green);"></i>
         <h3>Specification & Control Report</h3>
         <p style="margin-top: 0.5rem; color: var(--text-muted);">All tracked materials match approved engineering specifications.</p>
         <button class="action-btn" style="margin: 1.5rem auto 0 auto;" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export Report (CSV)</button>
@@ -509,13 +582,10 @@
         </div>
         <div class="form-group">
           <label>Target Site</label>
-          <select id="matSite" onchange="handleSiteSelection(this.value)">
-            <!-- Populated dynamically -->
-          </select>
+          <select id="matSite" onchange="handleSiteSelection(this.value)"></select>
         </div>
 
-        <!-- Hidden container for adding new custom site (Drop-a-pin coordinates) -->
-        <div id="newSiteFields" style="display: none; background: var(--bg-canvas); padding: 10px; border-radius: 8px; margin-bottom: 1rem;">
+        <div id="newSiteFields" style="display: none; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 8px; margin-bottom: 1rem;">
           <div class="form-group">
             <label>New Site Name</label>
             <input type="text" id="newSiteName" placeholder="e.g. Site D - Warehouse">
@@ -584,7 +654,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Initial Sites Setup
     let defaultSites = [
       { name: "Main Site", lat: 8.9600, lng: 125.6000 },
       { name: "Site B", lat: 8.9450, lng: 125.5850 },
@@ -598,13 +667,20 @@
       { id: 4, name: "Ceramic Tiles", category: "Finishes", quantity: 600, site: "Main Site", status: "In Stock" }
     ];
 
-    // Load State from LocalStorage
     let sites = JSON.parse(localStorage.getItem('archhub_sites')) || defaultSites;
     let materials = JSON.parse(localStorage.getItem('archhub_materials')) || defaultMaterials;
     let popupLimit = parseInt(localStorage.getItem('archhub_popup_limit')) || 10;
     document.getElementById('sitePopupLimit').value = popupLimit;
 
-    // --- Tab Switch Logic ---
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('collapsed');
+      setTimeout(() => {
+        map.invalidateSize();
+        fullMap.invalidateSize();
+      }, 300);
+    }
+
     function switchTab(index, element) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -623,7 +699,6 @@
       renderUI(filterText);
     }
 
-    // --- Map Initialization ---
     const map = L.map('map').setView([8.9559, 125.5994], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
@@ -637,7 +712,6 @@
       mapMarkers = [];
 
       sites.forEach(site => {
-        // Filter materials for this site, sort by ID descending (newest first), and slice to limit N
         const siteMaterials = materials
           .filter(m => m.site === site.name)
           .sort((a, b) => b.id - a.id)
@@ -653,7 +727,7 @@
         } else {
           popupHtml += `<div style="max-height: 150px; overflow-y: auto;"><ul style="padding-left: 15px; font-size: 0.85rem;">`;
           siteMaterials.forEach(item => {
-            popupHtml += `<li><b>${item.name}</b> (${item.quantity} qty) - <span style="color:var(--accent-terracotta)">${item.status}</span></li>`;
+            popupHtml += `<li><b>${item.name}</b> (${item.quantity} qty) - <span style="color:var(--olive-green)">${item.status}</span></li>`;
           });
           popupHtml += `</ul></div>`;
         }
@@ -671,7 +745,6 @@
       });
     }
 
-    // --- Dynamic UI Rendering Engine ---
     function renderUI(filterQuery = '') {
       const filtered = materials.filter(m => 
         m.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
@@ -679,13 +752,11 @@
         m.status.toLowerCase().includes(filterQuery.toLowerCase())
       );
 
-      // KPI Calculations
       document.getElementById('kpi-total').innerText = materials.length;
       document.getElementById('kpi-low').innerText = materials.filter(m => m.status === 'Low Stock' || m.quantity < 20).length;
       document.getElementById('kpi-pending').innerText = materials.filter(m => m.status === 'In Transit').length;
       document.getElementById('kpi-issues').innerText = materials.filter(m => m.status === 'Delayed').length;
 
-      // Inventory Alerts Panel
       const alertList = document.getElementById('alert-list');
       alertList.innerHTML = '';
       materials.filter(m => m.status !== 'In Stock').forEach(item => {
@@ -704,7 +775,6 @@
         `;
       });
 
-      // Inventory Catalog Table with Edit & Delete Actions
       const invBody = document.getElementById('inventoryTableBody');
       invBody.innerHTML = '';
       filtered.forEach(item => {
@@ -728,7 +798,6 @@
         `;
       });
 
-      // Delivery Tracker Table
       const devBody = document.getElementById('deliveryTableBody');
       devBody.innerHTML = '';
       filtered.forEach(item => {
@@ -774,7 +843,6 @@
       renderUI(q);
     }
 
-    // --- Add Shipment Handler ---
     document.getElementById('materialForm').addEventListener('submit', (e) => {
       e.preventDefault();
 
@@ -790,7 +858,6 @@
           return;
         }
 
-        // Add site if not already present
         if (!sites.some(s => s.name.toLowerCase() === newSiteName.toLowerCase())) {
           sites.push({ name: newSiteName, lat: lat || 8.9500, lng: lng || 125.6000 });
         }
@@ -813,7 +880,6 @@
       document.getElementById('newSiteFields').style.display = 'none';
     });
 
-    // --- Edit Inventory Item Modal Logic ---
     function openEditModal(id) {
       const item = materials.find(m => m.id === id);
       if(!item) return;
@@ -844,13 +910,11 @@
       }
     });
 
-    // --- Delete Action ---
     function deleteMaterial(id) {
       materials = materials.filter(m => m.id !== id);
       renderUI();
     }
 
-    // --- Settings & CSV Export ---
     function saveSettings() {
       popupLimit = parseInt(document.getElementById('sitePopupLimit').value) || 10;
       localStorage.setItem('archhub_popup_limit', popupLimit);
@@ -886,7 +950,6 @@
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Initial Render On Load
     renderUI();
   </script>
 </body>
